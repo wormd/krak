@@ -1,28 +1,33 @@
 import kraws
 import json
 
+
 def callback(ws, msg):
     pass
+
 
 def ohlc_5_xbteur(ws, msg):
     pass
 
+
 def ohlc_5_xbtusd(ws, msg):
     pass
 
+
 def ohlc_1_xbteur(ws, msg):
     pass
+
 
 def another(ws, msg):
     pass
 
 
-a = kraws.kraws('a','b')
+a = kraws.kraws('a', 'b')
 a.public_subscribe({"pair": ["XBT/EUR"],
-						"subscription": {"interval": 5,"name": "ohlc"}
-					}, ohlc_5_xbteur)
+                    "subscription": {"interval": 5, "name": "ohlc"}
+                    }, ohlc_5_xbteur)
 a.public_subscribe({"pair": ["XBT/USD"],
-                        "subscription": {"interval": 5,"name": "ohlc"}
+                    "subscription": {"interval": 5, "name": "ohlc"}
                     }, ohlc_5_xbtusd)
 # a.public_subscribe({"pair": ["XBT/EUR"],
 #                         "subscription": {"interval": 1,"name": "ohlc"}
@@ -44,5 +49,3 @@ a.public_subscribe({"pair": ["XBT/USD"],
 #         "vol": "1000000000.00000000"
 #         }
 #     }, another)
-
-

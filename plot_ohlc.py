@@ -1,22 +1,20 @@
 import krapi
-import datetime as dt
+from datetime import datetime as dt
 import plotly.graph_objects as go
 import pandas
+from utility import *
 
-with open('keys.txt', 'r') as fp:
-    pk = fp.readline().rstrip()
-    sk = fp.readline().rstrip()
-
+pk, sk = read_keys('keys.txt')
 k = krapi.krapi(pk, sk)
 k.debug = True
 
 # k.public_asset_pairs()
-
-since = dt.datetime(2019, 6, 6).timestamp()
-
-result = k.ohlc('XBTEUR', interval=60 * 24, since=since)
+since = dt(2019, 6, 6).timestamp()
+result,last = k.ohlc('XBTEUR', interval=60 * 24, since=since)
+if result is None:
+    exit(-1)
 for i in result:
-    i[0] = dt.datetime.fromtimestamp(i[0])
+    i[0] = dt.fromtimestamp(i[0])
 
 df = pandas.DataFrame(result, columns=['date', 'open', 'high',
                                        'low', 'close', 'vwap', 'volume', 'count'])

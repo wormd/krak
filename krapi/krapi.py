@@ -4,114 +4,109 @@ import hashlib
 import base64
 import hmac
 import urllib
-import datetime
-import tabulate
+import logging
 
-class kraken:
-    
+class krapi:
+
     def __init__(self, pk, sk):
         self.pk = pk
         self.sk = sk
         self.api_url = 'https://api.kraken.com'
         self.session = requests.Session()
-        self.session.headers.update({'User-Agent':'KrAPI'})
-        self.response = None
+        self.session.headers.update({'User-Agent': 'KrAPI'})
         self.counter = 0
-        self.debug = True
+    
+    def setLogging(self, level):
+        logging.basicConfig(level=level,
+                format='[%(levelname)s] (%(threadName)-10s) %(message)s', )
 
     def public_query(self, query, data={}):
-        url_path = '/0/public/'+query
-        
-        query_url = self.api_url+url_path
-        self.response = self.session.post(query_url, data)
-        return self.response.json()
+        url_path = '/0/public/' + query
+        query_url = self.api_url + url_path
 
+        r, l = self._query(query_url, data, False)
+        return r, l
 
     def private_query(self, query, data={}):
 
-        url_path = '/0/private/'+query
-        data['nonce'] = int(time.time()*1000)
-        
+        url_path = '/0/private/' + query
+        query_url = self.api_url + url_path
+
+        self._query(query_url, data, True)
+
         headers = {
             'API-Key': self.pk,
             'API-Sign': self._sign(url_path, data)
         }
 
-        query_url = self.api_url+url_path
-        self.response = self.session.post(query_url, data, headers=headers)
+        r, l = self._query(query_url, data, False)
+        return r, l
 
-        return self.response.json()
-   
+    def _query(self, url, data={}, private=False):
+        
+
+        headers=None
+        if private:
+            data['nonce'] = int(time.time() * 1000)
+            headers = {
+            'API-Key': self.pk,
+            'API-Sign': self._sign(url, data)
+        }
+
+        logging.debug('Query Url: '+url)
+        logging.debug('Data: '+str(data))
+        if private:
+            logging.debug('private: yes'+', Headers: '+headers)
+        else:
+            logging.debug('private: no')
+
+        response = self.session.post(url, data, headers=headers)
+        response = response.json()
+        logging.debug(str(response)[:50])
+        
+        if len(response['error']) > 0:
+            logging.error(response['error'][0])
+            return None, None
+
+        pair = list(response['result'].keys())[0]
+
+        last = None
+        if 'last' in response:
+            last = response['result']['last']
+
+        return response['result'][pair], last
+            
 
     def _sign(self, url_path, data={}):
-        first = (str(data['nonce'])+urllib.parse.urlencode(data)).encode()
-        digested_first = hashlib.sha256(first).digest()
+        first = (str(data['nonce']) + urllib.parse.urlencode(data)).encode()
+        digested = hashlib.sha256(first).digest()
 
-        string = url_path.encode()+digested_first
+        string = url_path.encode() + digested
 
         digest = hmac.new(base64.b64decode(self.sk), string, hashlib.sha512).digest()
 
         return base64.b64encode(digest).decode()
 
+    def ohlc(self, pair, interval=None, since=None, recursive=False):
+        params = {'pair': pair}
+        if interval:
+            params['interval'] = interval
+        if since and recursive:
+            params['since'] = since
 
-    def _write_output(self, data, file):
-        header = """ 
-        <html><head><link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css" 
-        integrity="sha384-Vkoo8x4CGsO3+Hhxv8T/Q5PaXtkKtu6ug5TOeNV6gBiFeWPGFN9MuhOf23Q9Ifjh" crossorigin="anonymous">
-        </head><body>
-                """
+        result, last = self.public_query('OHLC', params)
 
-        footer = "</body></html>"
-
-        data = data.replace("<table>","<table class='table'")
-
-        data = header + data + footer
-    
-        with open(file, 'w+') as fp:
-            fp.write(data)
-            fp.close()
+        return result, last
 
 
-    def public_trades(self, pair):
-
-        resp = self.public_query('Trades', {'pair': pair})
-
-        if resp['error']:
-            for error in resp['error']:
-                print("ERROR: "+error)
-
-        if self.debug and 'result' in resp:
-            for key in resp['result']:
-                if key == 'last':
-                    break
-
-                result = resp['result'][key]
-                
-                #result.sort(reverse = True, key = lambda x: x[1]) # sort by volume
-                for item in result:
-                    item[2] = datetime.datetime.fromtimestamp(item[2])
-
-                    tab = tabulate.tabulate(result, 
-                    headers=['price', 'volume', 'time', 'buy/sell', 'market/limit', 'misc'],
-                    tablefmt='html',
-                    floatfmt='.5f')
-
-                    self._write_output(tab, './PublicTrades.html')
-
-        return resp
-
-    def ohlc(self, pair):
-	    # resp = self.public_query('OHLC', {'pair': pair})
-	    # print(resp)
-        pass
 
     def public_asset_pairs(self):
-       
+
         resp = self.public_query('AssetPairs')
 
         if resp['error']:
             for error in resp['error']:
-                print("ERROR: "+error)
+                print("ERROR: " + error)
 
         for pair in resp['result']:
             pass

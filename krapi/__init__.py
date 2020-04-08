@@ -1,3 +1,3 @@
-from .krapi import kraken
+from .krapi import krapi
 
-__all__ = ['kraken']
+__all__ = ['krapi']
