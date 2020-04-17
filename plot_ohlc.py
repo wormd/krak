@@ -6,7 +6,6 @@ from utility import *
 
 pk, sk = read_keys('keys.txt')
 k = krapi.krapi(pk, sk)
-k.debug = True
 
 # k.public_asset_pairs()
 since = dt(2019, 6, 6).timestamp()

@@ -5,6 +5,7 @@ import base64
 import hmac
 import urllib
 import logging
+from datetime import datetime as dt
 
 class krapi:
 
@@ -18,7 +19,7 @@ class krapi:
     
     def setLogging(self, level):
         logging.basicConfig(level=level,
-                format='[%(levelname)s] (%(threadName)-10s) %(message)s', )
+                format='[%(levelname)s] %(message)s', )
 
     def public_query(self, query, data={}):
         url_path = '/0/public/' + query
@@ -56,13 +57,13 @@ class krapi:
         logging.debug('Query Url: '+url)
         logging.debug('Data: '+str(data))
         if private:
-            logging.debug('private: yes'+', Headers: '+headers)
+            logging.debug('Private: yes'+', Headers: '+headers)
         else:
-            logging.debug('private: no')
+            logging.debug('Private: no')
 
         response = self.session.post(url, data, headers=headers)
         response = response.json()
-        logging.debug(str(response)[:50])
+        logging.debug('Response: ' + str(response)[:100]+'...')
         
         if len(response['error']) > 0:
             logging.error(response['error'][0])
@@ -70,9 +71,9 @@ class krapi:
 
         pair = list(response['result'].keys())[0]
 
-        last = None
-        if 'last' in response:
-            last = response['result']['last']
+        last = response['result']['last']
+        if last:
+            logging.debug('Last: '+str(last))
 
         return response['result'][pair], last
             
@@ -87,11 +88,11 @@ class krapi:
 
         return base64.b64encode(digest).decode()
 
-    def ohlc(self, pair, interval=None, since=None, recursive=False):
+    def ohlc(self, pair, interval=None, since=None):
         params = {'pair': pair}
         if interval:
             params['interval'] = interval
-        if since and recursive:
+        if since:
             params['since'] = since
 
         result, last = self.public_query('OHLC', params)
