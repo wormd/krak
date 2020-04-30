@@ -6,7 +6,6 @@ import logging
 
 pk, sk = read_keys('keys.txt')
 k = krapi.krapi(pk, sk)
-#k.setLogging(logging.DEBUG)
 k.setLogging(logging.INFO)
 
 result, last = k.public_query('Trades', {'pair':'XBTEUR'})

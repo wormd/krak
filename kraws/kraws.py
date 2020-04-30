@@ -14,7 +14,6 @@ class kraws:
     def __init__(self, pk, sk):
         self.pk = pk
         self.sk = sk
-        self.url_token = 'https://api.kraken.com/0/private/GetWebSocketsToken'
 
     def public_subscribe(self, query, callback):
         self._subscribe(query, callback, None)
@@ -27,18 +26,20 @@ class kraws:
 
     def get_token(self):
         self.session = requests.Session()
+        kr = krapi.krapi(self.pk, self.sk)        
+        resp = kr.private_query('GetWebSocketsToken')
+        print(resp)
+        return resp['token']
 
-        data = {'nonce': int(time.time() * 1000)}
+    def setLogging(self, level):
+        logging.basicConfig(level=level,
+                            format='[%(levelname)s] (%(threadName)-10s) %(message)s', 
+                        )
 
-        kr = krapi.krapi(self.pk, self.sk)
-        headers = {
-            'API-Key': self.pk,
-            'API-Sign': kr._sign(self.url_token, data)
-        }
-
-        self.response = self.session.post(self.url_token, data, headers=headers)
-        return self.response.json()['result']['token']
-
+    def ohlc(self, pairs, reqid, interval, callback):
+        self.public_subscribe({'event': 'subscribe', "pair": pairs,"reqid": reqid,
+            "subscription": {"interval": interval,"name": "ohlc"}},
+            callback)
 
 class ws_conn():
     def __init__(self, callback, query, token):
@@ -46,11 +47,8 @@ class ws_conn():
         self.token = token
         self.query = query
 
-        logging.basicConfig(level=logging.DEBUG,
-                            format='[%(levelname)s] (%(threadName)-10s) %(message)s', )
         self.url_pub = 'wss://ws.kraken.com'
         self.url_pri = 'wss://ws-auth.kraken.com'
-
 
         self.message = None
         self.trace = False
@@ -96,12 +94,11 @@ class ws_conn():
             self.ws.close()
 
         logging.debug(msg)
-        self.callback(self, msg)
+        self.callback(self, dejson)
 
     def on_open(self):
         logging.info('++ Connected ++')
         message = {
-            'event': 'subscribe',
             **self.query
         }
         if self.token:

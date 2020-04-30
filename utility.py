@@ -75,9 +75,8 @@ def update_ohlc_data(path = None, pair = 'XBTEUR', interval = 60*24):
 
     if not os.path.isdir(FOLDERPATH):
         os.mkdir(FOLDERPATH)
-    # date_parser=dateparse
     if os.path.isfile(DATAPATH):
-        df = pandas.read_csv(DATAPATH, parse_dates=True, index_col='date')
+        df = pandas.read_csv(DATAPATH, parse_dates=True, index_col='date') # date_parser=dateparse
     
     since = read_vars(SINCEPATH, 1)
     result, last = k.ohlc(pair, interval=interval, since=since)
@@ -93,7 +92,7 @@ def update_ohlc_data(path = None, pair = 'XBTEUR', interval = 60*24):
                                         'low', 'close', 'vwap', 'volume', 'count'])
 
     new.set_index('date', inplace=True)
-    new.index = pandas.to_datetime(new.index)
+    new.index = pandas.to_datetime(new.index, unit='s')
     
     new = new.astype({'open':'float64', 'high':'float64', 'low':'float64',
         'close':'float64', 'vwap':'float64', 'volume':'float64'})
@@ -101,21 +100,7 @@ def update_ohlc_data(path = None, pair = 'XBTEUR', interval = 60*24):
     if df is None:
         new.to_csv(DATAPATH)
     else:
-        df.drop(df.tail(1))
+        df.drop(df.tail(1).index, inplace=True)
         new = pandas.concat([df, new])
         new.to_csv(DATAPATH)
     return new
-
-
-def plot_signal(ax1, signals, name=''):
-    s = name+'_short_mavg'
-    l = name+'_long_mavg'
-    signals = signals.rename(columns = {'short_mavg': s, 'long_mavg' : l})
-    signals[[s,l]].plot(ax=ax1, lw=1.)
-    ax1.plot(signals.loc[signals.positions == 1.0].index, 
-            signals[s][signals.positions == 1.0],
-            '^', markersize=10, color='m')
-
-    ax1.plot(signals.loc[signals.positions == -1.0].index, 
-    signals[s][signals.positions == -1.0],
-    'v', markersize=10, color='k')
