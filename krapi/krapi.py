@@ -25,15 +25,13 @@ class krapi:
     def public_query(self, query, data={}):
         url_path = '/0/public/' + query
 
-        r, l = self._query(url_path, data, False)
-        return r, l
+        return self._query(url_path, data, False)
 
 
     def private_query(self, query, data={}):
         url_path = '/0/private/' + query
 
-        r, l = self._query(url_path, data, True)
-        return r, l
+        return self._query(url_path, data, True)
 
 
     def _query(self, url, data={}, private=False):
@@ -60,12 +58,7 @@ class krapi:
             logging.error(response['error'][0])
             return None, None
 
-        last = None
-        if 'last' in response:
-            last = response['last']
-            logging.debug('Last: '+str(last))
-
-        return response['result'], last
+        return response['result']
             
 
     def _sign(self, url_path, data={}):
@@ -86,8 +79,7 @@ class krapi:
         if since:
             params['since'] = since
 
-        result, last = self.public_query('OHLC', params)
+        result = self.public_query('OHLC', params)
+        key = list(result.keys())[0]
 
-        pair = list(result.keys())[0]
-
-        return result[pair], last
+        return result[key], result['last']
