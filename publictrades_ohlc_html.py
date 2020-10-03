@@ -12,7 +12,7 @@ result, last = k.public_query('Trades', {'pair':'XBTEUR'})
 if result is None:
     exit(-1)
 for item in result:
-    item[2] = datetime.fromtimestamp(item[2])
+    item[2] = dt.fromtimestamp(item[2])
 
 # sort by volume
 result.sort(reverse = True, key = lambda x: x[1])

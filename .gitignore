@@ -1,0 +1,8 @@
+.vscode
+.idea
+*.txt
+*.html
+krapi/__pycache__/
+kraws/__pycache__/
+zz*/
+__pycache__
